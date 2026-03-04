@@ -1,51 +1,27 @@
 import express from "express";
-import axios from "axios";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { HttpServerTransport } from "@modelcontextprotocol/sdk/server/http.js";
-import { z } from "zod";
-
-const server = new McpServer({
-  name: "cognigy-mcp-bridge",
-  version: "1.0.0"
-});
-
-server.tool(
-  "send_to_cognigy",
-  {
-    message: z.string()
-  },
-  async ({ message }) => {
-    const response = await axios.post(
-      "https://endpoint-trial.cognigy.ai/webhooks/rest/webhook",
-      {
-        text: message
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.COGNIGY_API_KEY}`
-        }
-      }
-    );
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(response.data)
-        }
-      ]
-    };
-  }
-);
 
 const app = express();
 app.use(express.json());
 
-const transport = new HttpServerTransport();
-await server.connect(transport);
+// Health check route
+app.get("/", (req, res) => {
+  res.send("MCP Cognigy Bridge is running 🚀");
+});
 
-app.post("/mcp", async (req, res) => {
-  await transport.handleRequest(req, res);
+// Example tool endpoint
+app.post("/tool", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    // Here you will later connect Cognigy API
+    res.json({
+      reply: `Received message: ${message}`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
